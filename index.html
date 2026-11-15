@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#2f6b3a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Wort-Labyrinth">
+<title>Wort-Labyrinth</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;font-family:"Segoe UI",system-ui,-apple-system,Roboto,sans-serif;background:#1e3d26;color:#1b1b1b;overscroll-behavior:none}
+.screen{display:none;height:100%;flex-direction:column;align-items:center}
+.screen.on{display:flex}
+#home{overflow-y:auto;padding:18px 14px 30px;color:#fff}
+h1{font-size:2rem;margin:6px 0 2px;text-align:center}
+.sub{opacity:.85;margin:0 0 16px;text-align:center}
+.card{background:#fff8e6;color:#222;border-radius:16px;padding:14px;width:100%;max-width:520px;margin-bottom:14px;box-shadow:0 4px 0 rgba(0,0,0,.25)}
+.card h2{margin:0 0 10px;font-size:1.15rem}
+.avatars{display:flex;gap:8px;flex-wrap:wrap}
+.avatars button{font-size:2rem;width:56px;height:56px;border-radius:14px;border:3px solid transparent;background:#fff;cursor:pointer}
+.avatars button.sel{border-color:#e8a317;background:#ffe9a8}
+.lvl{display:flex;align-items:center;gap:10px;width:100%;padding:12px;margin:6px 0;border:none;border-radius:12px;background:#4f9a5c;color:#fff;font-size:1.05rem;text-align:left;cursor:pointer}
+.lvl.locked{background:#9aa39c;cursor:not-allowed}
+.lvl .ic{font-size:1.6rem}
+.lvl .nm{flex:1}
+.lvl .st{letter-spacing:2px}
+#game{background:#1e3d26}
+#bar{width:100%;max-width:640px;display:flex;align-items:center;justify-content:space-between;padding:8px 10px;color:#fff;font-weight:600}
+#bar button{background:#ffffff22;color:#fff;border:none;border-radius:10px;padding:8px 12px;font-size:1rem;cursor:pointer}
+#cv{touch-action:none;border-radius:10px;box-shadow:0 4px 12px rgba(0,0,0,.4)}
+#pad{display:grid;grid-template-columns:64px 64px 64px;grid-template-rows:56px 56px;gap:8px;margin:10px 0 14px}
+#pad button{font-size:1.6rem;border:none;border-radius:14px;background:#fff8e6;box-shadow:0 4px 0 #b9a46c;cursor:pointer;user-select:none;touch-action:none}
+#pad button:active{transform:translateY(3px);box-shadow:0 1px 0 #b9a46c}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;padding:12px;z-index:10}
+.overlay.on{display:flex}
+.box{background:#fff8e6;border-radius:18px;padding:18px;width:100%;max-width:520px;max-height:94vh;overflow-y:auto;box-shadow:0 6px 0 #b9a46c}
+.qtag{display:inline-block;background:#2f6b3a;color:#fff;border-radius:8px;padding:3px 9px;font-size:.85rem;margin-bottom:8px}
+.prompt{font-size:1.25rem;font-weight:700;margin:4px 0 4px}
+.hint{color:#555;margin:0 0 12px;font-size:.95rem}
+.sent{font-size:1.35rem;line-height:2.1;background:#fff;border-radius:12px;padding:10px 12px;margin-bottom:14px}
+.hl{background:#ffd54a;border-radius:6px;padding:2px 4px}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.opt,.wbtn,.cbtn,.go{font-size:1.05rem;border:none;border-radius:12px;padding:12px 8px;background:#4f9a5c;color:#fff;cursor:pointer;box-shadow:0 3px 0 #2f6b3a}
+.opt small{display:block;font-size:.75rem;opacity:.85}
+.wbtn,.cbtn{background:#fff;color:#222;box-shadow:0 3px 0 #ccc;margin:4px;padding:10px 12px;font-size:1.2rem}
+.wbtn.sel,.cbtn.sel{background:#ffd54a}
+.ok{background:#3fae4f!important;color:#fff!important}
+.bad{background:#e0533d!important;color:#fff!important}
+.go{width:100%;margin-top:12px;background:#e8a317;box-shadow:0 3px 0 #a87508;font-weight:700}
+input.ans{width:100%;font-size:1.3rem;padding:12px;border-radius:12px;border:3px solid #4f9a5c;outline:none}
+.fb{margin-top:12px;font-size:1.05rem;padding:10px 12px;border-radius:12px;display:none}
+.fb.on{display:block}
+.fb.good{background:#d8f5d6}
+.fb.wrong{background:#ffe0d9}
+.big{font-size:3.2rem;text-align:center;margin:0}
+.center{text-align:center}
+.help{font-size:.9rem;color:#444;line-height:1.5}
+.help b{color:#2f6b3a}
+</style>
+</head>
+<body>
+
+<!-- HOME -->
+<div id="home" class="screen on">
+  <h1>🗝️ Wort-Labyrinth</h1>
+  <p class="sub">Jede Tür stellt dir eine Deutsch-Frage!</p>
+  <div class="card">
+    <h2>Wähle deine Figur</h2>
+    <div class="avatars" id="avatars"></div>
+  </div>
+  <div class="card">
+    <h2>Wähle ein Labyrinth</h2>
+    <div id="levels"></div>
+    <p class="help">⭐⭐⭐ = alle Türen beim ersten Versuch geöffnet.</p>
+  </div>
+  <div class="card help">
+    <h2>📘 Spickzettel</h2>
+    <b>Wortarten</b><br>
+    Nomen (Namenwort): Menschen, Tiere, Dinge – groß geschrieben<br>
+    Verb (Zeitwort): was jemand tut oder was geschieht<br>
+    Adjektiv (Eigenschaftswort): wie etwas ist<br>
+    Artikel (Begleiter): der, die, das, ein, eine …<br>
+    Pronomen (Fürwort): ich, du, er, sie, es, wir …<br>
+    Präposition (Vorwort): auf, unter, in, über, an …<br><br>
+    <b>Satzglieder</b><br>
+    Subjekt: Wer oder was? · Prädikat: Was tut …? / Was geschieht?<br>
+    Akkusativobjekt: Wen oder was? · Dativobjekt: Wem?<br>
+    Ortsangabe: Wo? Wohin? · Zeitangabe: Wann?
+  </div>
+</div>
+
+<!-- GAME -->
+<div id="game" class="screen">
+  <div id="bar">
+    <button id="back">◀ Menü</button>
+    <span id="lvname"></span>
+    <span id="score">🚪 0/0 · 🍎 0</span>
+  </div>
+  <canvas id="cv"></canvas>
+  <div id="pad">
+    <span></span><button data-d="0,-1">⬆️</button><span></span>
+    <button data-d="-1,0">⬅️</button><button data-d="0,1">⬇️</button><button data-d="1,0">➡️</button>
+  </div>
+</div>
+
+<!-- QUESTION -->
+<div id="qov" class="overlay"><div class="box" id="qbox"></div></div>
+<!-- WIN -->
+<div id="wov" class="overlay"><div class="box center" id="wbox"></div></div>
+
+<script>
+"use strict";
+// ---------------- CONTENT ----------------
+// Tags: N Nomen, V Verb, J Adjektiv, A Artikel, P Pronomen, R Präposition, X (wird nicht abgefragt)
+// Satzglieder: S Subjekt, P Prädikat, AO Akkusativobjekt, DO Dativobjekt, ORT Ortsangabe, ZEIT Zeitangabe
+const SENTENCES = [
+ "S:Die/A Katze/N | P:schläft/V | ORT:auf/R dem/A Sofa/N",
+ "S:Der/A kleine/J Hund/N | P:frisst/V | AO:einen/A Knochen/N",
+ "S:Lena/N | P:schenkt/V | DO:ihrer/X Oma/N | AO:eine/A Blume/N",
+ "ZEIT:Am/R Montag/N | P:schreiben/V | S:wir/P | AO:einen/A Test/N",
+ "S:Mein/X Bruder/N | P:spielt/V | AO:Fußball/N",
+ "S:Die/A Kinder/N | P:bauen/V | AO:einen/A großen/J Schneemann/N",
+ "S:Er/P | P:hilft/V | DO:dem/A alten/J Mann/N",
+ "S:Der/A Lehrer/N | P:erklärt/V | DO:den/A Kindern/N | AO:die/A Aufgabe/N",
+ "S:Sie/P | P:trinkt/V | AO:heißen/J Kakao/N",
+ "ORT:Im/R Garten/N | P:blühen/V | S:bunte/J Blumen/N",
+ "S:Das/A Pferd/N | P:läuft/V | ORT:über/R die/A grüne/J Wiese/N",
+ "S:Der/A Bäcker/N | P:backt/V | ZEIT:jeden/X Morgen/N | AO:frisches/J Brot/N",
+ "S:Ich/P | P:lese/V | AO:ein/A spannendes/J Buch/N",
+ "S:Die/A Sonne/N | P:scheint/V | ORT:am/R Himmel/N",
+ "S:Opa/N | P:erzählt/V | DO:uns/P | AO:eine/A lustige/J Geschichte/N",
+ "ZEIT:Im/R Sommer/N | P:fahren/V | S:wir/P | ORT:ans/R Meer/N",
+ "S:Der/A schnelle/J Fuchs/N | P:jagt/V | AO:den/A Hasen/N",
+ "S:Wir/P | P:gratulieren/V | DO:dem/A Sieger/N",
+ "S:Die/A Maus/N | P:wohnt/V | ORT:unter/R dem/A alten/J Schrank/N",
+ "S:Anna/N | P:malt/V | AO:ein/A buntes/J Bild/N",
+ "S:Du/P | P:gibst/V | DO:dem/A Hund/N | AO:Wasser/N",
+ "ZEIT:Morgen/X | P:besucht/V | S:Paul/N | AO:seinen/X Freund/N",
+ "S:Der/A Vogel/N | P:singt/V | ORT:auf/R dem/A Dach/N",
+ "S:Die/A Mutter/N | P:kauft/V | AO:süße/J Äpfel/N",
+ "S:Es/P | P:schneit/V | ZEIT:im/R Winter/N",
+ "S:Der/A Ball/N | P:gehört/V | DO:dem/A Mädchen/N",
+ "S:Die/A Oma/N | P:strickt/V | DO:ihm/P | AO:einen/A warmen/J Schal/N",
+ "ZEIT:Nach/R der/A Schule/N | P:essen/V | S:wir/P | AO:Palatschinken/N",
+ "S:Der/A Bus/N | P:hält/V | ORT:vor/R der/A Schule/N",
+ "S:Sie/P | P:zeigt/V | DO:dem/A Arzt/N | AO:ihren/X kranken/J Finger/N"
+];
+const POS = {N:"Nomen",V:"Verb",J:"Adjektiv",A:"Artikel",P:"Pronomen",R:"Präposition"};
+const POS_AT = {N:"Namenwort",V:"Zeitwort",J:"Eigenschaftswort",A:"Begleiter",P:"Fürwort",R:"Vorwort"};
+const POS_HINT = {
+ N:"Nomen nennen Menschen, Tiere, Pflanzen oder Dinge. Man schreibt sie groß.",
+ V:"Verben sagen, was jemand tut oder was geschieht.",
+ J:"Adjektive sagen, wie etwas ist (groß, schnell, bunt …).",
+ A:"Artikel begleiten das Nomen: der, die, das, ein, eine, dem, den …",
+ P:"Pronomen stehen für ein Nomen: ich, du, er, sie, es, wir, uns, ihm …",
+ R:"Präpositionen zeigen oft, wo oder wann etwas ist: auf, unter, in, im, am, vor, nach …"
+};
+const PART = {S:"Subjekt",P:"Prädikat",AO:"Akkusativobjekt",DO:"Dativobjekt",ORT:"Ortsangabe",ZEIT:"Zeitangabe"};
+const PART_Q = {S:"Wer oder was?",P:"Was tut …? Was geschieht?",AO:"Wen oder was?",DO:"Wem?",ORT:"Wo? Wohin?",ZEIT:"Wann?"};
+
+function parse(s){
+  const chunks = s.split("|").map(c=>{
+    c=c.trim(); const i=c.indexOf(":");
+    const role=c.slice(0,i);
+    const words=c.slice(i+1).trim().split(/\s+/).map(w=>{const p=w.split("/");return {t:p[0],g:p[1]};});
+    return {role,words,text:words.map(w=>w.t).join(" ")};
+  });
+  let k=0; chunks.forEach(c=>c.words.forEach(w=>w.i=k++));
+  return {chunks,words:chunks.flatMap(c=>c.words)};
+}
+const DATA = SENTENCES.map(parse);
+
+const rnd = n=>Math.floor(Math.random()*n);
+const pick = a=>a[rnd(a.length)];
+const shuffle = a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]];}return a;};
+const esc = s=>s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const norm = s=>s.trim().replace(/\s+/g," ").replace(/[.!?,]+$/,"");
+
+function sentHTML(d, hlWords){
+  const set=new Set(hlWords||[]);
+  return d.words.map(w=>set.has(w.i)?`<span class="hl">${esc(w.t)}</span>`:esc(w.t)).join(" ")+".";
+}
+
+// ---------------- QUESTION GENERATORS ----------------
+const GEN = {
+  posMC(){
+    const d=pick(DATA); const w=pick(d.words.filter(x=>POS[x.g]));
+    const opts=shuffle([w.g,...shuffle(Object.keys(POS).filter(k=>k!==w.g)).slice(0,3)]);
+    return {tag:"Wortarten",kind:"mc",prompt:`Welche Wortart ist „${w.t}“?`,hint:"",sent:sentHTML(d,[w.i]),
+      options:opts.map(k=>({v:k,label:POS[k],small:POS_AT[k]})),answer:w.g,
+      explain:`„${w.t}“ ist ein${w.g==="N"||w.g==="V"||w.g==="J"||w.g==="A"||w.g==="P"?"":"e"} <b>${POS[w.g]}</b> (${POS_AT[w.g]}). ${POS_HINT[w.g]}`};
+  },
+  posTap(){
+    const d=pick(DATA); const tags=[...new Set(d.words.map(w=>w.g).filter(g=>POS[g]))];
+    const g=pick(tags); const ans=d.words.filter(w=>w.g===g).map(w=>w.i);
+    const plural={N:"alle Nomen",V:"das Verb",J:"alle Adjektive",A:"alle Artikel",P:"alle Pronomen",R:"alle Präpositionen"}[g];
+    return {tag:"Wortarten",kind:"tapwords",prompt:`Tippe ${plural} an!`,hint:`${POS[g]} = ${POS_AT[g]}. ${POS_HINT[g]}`,
+      d,answer:ans,explain:`Richtig wäre: <b>${ans.map(i=>esc(d.words[i].t)).join(", ")}</b>. ${POS_HINT[g]}`};
+  },
+  typeNoun(){
+    const d=pick(DATA.filter(x=>x.words.some(w=>w.g==="N")));
+    const nouns=d.words.filter(w=>w.g==="N").map(w=>w.t);
+    return {tag:"Rechtschreibung",kind:"type",prompt:"Schreibe ein Nomen aus dem Satz ab.",hint:"Achtung: Nomen schreibt man groß!",
+      sent:sentHTML(d,[]),check:v=>{v=norm(v);
+        if(nouns.includes(v)) return [true];
+        if(nouns.map(n=>n.toLowerCase()).includes(v.toLowerCase())) return [false,`Fast! „${esc(v)}“ ist ein Nomen – aber Nomen schreibt man <b>groß</b>: ${esc(nouns.find(n=>n.toLowerCase()===v.toLowerCase()))}.`];
+        return [false,`Die Nomen in diesem Satz sind: <b>${nouns.map(esc).join(", ")}</b>.`];}};
+  },
+  partTap(){
+    const d=pick(DATA); const c=pick(d.chunks);
+    return {tag:"Satzglieder",kind:"tapchunk",prompt:`Tippe das ${PART[c.role]} an!`,hint:`Frage: ${PART_Q[c.role]}`,
+      d,answer:c.role,explain:`Das ${PART[c.role]} ist <b>${esc(c.text)}</b>. Frage: ${PART_Q[c.role]}`};
+  },
+  partMC(){
+    const d=pick(DATA); const c=pick(d.chunks);
+    const opts=shuffle([c.role,...shuffle(Object.keys(PART).filter(k=>k!==c.role)).slice(0,3)]);
+    return {tag:"Satzglieder",kind:"mc",prompt:"Welches Satzglied ist markiert?",hint:"Tipp: Stelle die passende Frage!",
+      sent:sentHTML(d,c.words.map(w=>w.i)),options:opts.map(k=>({v:k,label:PART[k],small:PART_Q[k]})),answer:c.role,
+      explain:`„${esc(c.text)}“ ist das <b>${PART[c.role]}</b>. Frage: ${PART_Q[c.role]}`};
+  },
+  typePred(){
+    const d=pick(DATA); const c=d.chunks.find(x=>x.role==="P");
+    return {tag:"Satzglieder",kind:"type",prompt:"Schreibe das Prädikat ab.",hint:"Was tut jemand? Was geschieht? (Das Prädikat ist ein Verb.)",
+      sent:sentHTML(d,[]),check:v=>norm(v).toLowerCase()===c.text.toLowerCase()?[true]:[false,`Das Prädikat ist <b>${esc(c.text)}</b>.`]};
+  },
+  typeSubj(){
+    const d=pick(DATA); const c=d.chunks.find(x=>x.role==="S"); const p=d.chunks.find(x=>x.role==="P");
+    return {tag:"Satzglieder",kind:"type",prompt:`Wer oder was ${p.text}? Schreibe das Subjekt ab.`,hint:"Schreibe alle Wörter des Subjekts (auch den Artikel).",
+      sent:sentHTML(d,[]),check:v=>norm(v).toLowerCase()===c.text.toLowerCase()?[true]:[false,`Wer oder was ${esc(p.text)}? → <b>${esc(c.text)}</b>.`]};
+  }
+};
+const MODES = {
+  pos:["posMC","posMC","posTap","posTap","typeNoun"],
+  part:["partTap","partTap","partMC","partMC","typePred","typeSubj"],
+  mix:["posMC","posTap","typeNoun","partTap","partMC","typePred","typeSubj"]
+};
+
+// ---------------- LEVELS & SAVE ----------------
+const LEVELS = [
+ {name:"Wortarten-Wald",ic:"🌲",mode:"pos",cw:5,ch:6,doors:4},
+ {name:"Wortarten-Höhle",ic:"🦇",mode:"pos",cw:6,ch:8,doors:6},
+ {name:"Satzglied-Schloss",ic:"🏰",mode:"part",cw:5,ch:6,doors:4},
+ {name:"Satzglied-Turm",ic:"🗼",mode:"part",cw:6,ch:8,doors:6},
+ {name:"Misch-Labyrinth",ic:"🌀",mode:"mix",cw:7,ch:9,doors:7},
+ {name:"Meister-Labyrinth",ic:"👑",mode:"mix",cw:8,ch:10,doors:9}
+];
+const AVATARS=["🦊","🐱","🐶","🦖","🐼","🚀","⚽","🐸"];
+const KEY="wortlab_v1";
+let save; try{save=JSON.parse(localStorage.getItem(KEY))||{};}catch(e){save={};}
+save.avatar=save.avatar||"🦊"; save.stars=save.stars||{};
+const store=()=>{try{localStorage.setItem(KEY,JSON.stringify(save));}catch(e){}};
+
+function renderHome(){
+  const av=document.getElementById("avatars"); av.innerHTML="";
+  AVATARS.forEach(a=>{const b=document.createElement("button");b.textContent=a;if(a===save.avatar)b.className="sel";
+    b.onclick=()=>{save.avatar=a;store();renderHome();};av.appendChild(b);});
+  const lv=document.getElementById("levels"); lv.innerHTML="";
+  LEVELS.forEach((L,i)=>{
+    const unlocked=i===0||save.stars[i-1]>0;
+    const s=save.stars[i]||0;
+    const b=document.createElement("button"); b.className="lvl"+(unlocked?"":" locked");
+    b.innerHTML=`<span class="ic">${unlocked?L.ic:"🔒"}</span><span class="nm">${i+1}. ${L.name}</span><span class="st">${"⭐".repeat(s)}${"☆".repeat(3-s)}</span>`;
+    if(unlocked) b.onclick=()=>startLevel(i);
+    lv.appendChild(b);
+  });
+}
+function show(id){document.querySelectorAll(".screen").forEach(s=>s.classList.toggle("on",s.id===id));}
+
+// ---------------- MAZE ----------------
+let G=null; // game state
+function genMaze(cw,ch){
+  const W=cw*2+1,H=ch*2+1; const g=[];for(let y=0;y<H;y++)g.push(new Array(W).fill(1));
+  const vis=[];for(let y=0;y<ch;y++)vis.push(new Array(cw).fill(false));
+  const st=[[0,0]];vis[0][0]=true;g[1][1]=0;
+  while(st.length){
+    const [x,y]=st[st.length-1];
+    const nb=[[1,0],[-1,0],[0,1],[0,-1]].filter(([dx,dy])=>{const nx=x+dx,ny=y+dy;return nx>=0&&ny>=0&&nx<cw&&ny<ch&&!vis[ny][nx];});
+    if(!nb.length){st.pop();continue;}
+    const [dx,dy]=pick(nb);const nx=x+dx,ny=y+dy;vis[ny][nx]=true;
+    g[y*2+1+dy][x*2+1+dx]=0;g[ny*2+1][nx*2+1]=0;st.push([nx,ny]);
+  }
+  return {g,W,H};
+}
+function bfs(g,W,H,sx,sy,tx,ty){
+  const prev={};const q=[[sx,sy]];prev[sx+","+sy]=null;
+  while(q.length){const [x,y]=q.shift();if(x===tx&&y===ty)break;
+    for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const nx=x+dx,ny=y+dy,k=nx+","+ny;
+      if(g[ny]&&g[ny][nx]===0&&!(k in prev)){prev[k]=[x,y];q.push([nx,ny]);}}}
+  const path=[];let c=[tx,ty];while(c){path.unshift(c);c=prev[c[0]+","+c[1]];}
+  return path;
+}
+function startLevel(i){
+  const L=LEVELS[i]; const m=genMaze(L.cw,L.ch);
+  const goal=[m.W-2,m.H-2]; const path=bfs(m.g,m.W,m.H,1,1,goal[0],goal[1]);
+  const doors={}; for(let k=1;k<=L.doors;k++){const idx=Math.round(k*(path.length-1)/(L.doors+1));
+    if(idx>0&&idx<path.length-1)doors[path[idx][0]+","+path[idx][1]]=true;}
+  const onPath=new Set(path.map(p=>p[0]+","+p[1]));
+  const free=[];for(let y=1;y<m.H;y++)for(let x=1;x<m.W;x++)if(m.g[y][x]===0&&!onPath.has(x+","+y))free.push(x+","+y);
+  const apples={};shuffle(free).slice(0,6).forEach(k=>apples[k]=true);
+  G={li:i,L,...m,goal,px:1,py:1,doors,apples,opened:0,total:Object.keys(doors).length,eaten:0,mistakes:0,busy:false,anim:{}};
+  document.getElementById("lvname").textContent=L.ic+" "+L.name;
+  show("game"); resize(); updScore(); draw();
+}
+function updScore(){document.getElementById("score").textContent=`🚪 ${G.opened}/${G.total} · 🍎 ${G.eaten}`;}
+
+const cv=document.getElementById("cv"),ctx=cv.getContext("2d"); let T=24;
+function resize(){
+  if(!G)return;
+  const aw=Math.min(window.innerWidth-16,640), ah=window.innerHeight-56-150;
+  T=Math.max(12,Math.floor(Math.min(aw/G.W,ah/G.H)));
+  const dpr=window.devicePixelRatio||1;
+  cv.style.width=T*G.W+"px";cv.style.height=T*G.H+"px";cv.width=T*G.W*dpr;cv.height=T*G.H*dpr;
+  ctx.setTransform(dpr,0,0,dpr,0,0); draw();
+}
+window.addEventListener("resize",resize);
+function emoji(e,x,y,s){ctx.font=`${Math.floor(T*(s||.8))}px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif`;ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(e,x*T+T/2,y*T+T/2+1);}
+function draw(){
+  if(!G)return;
+  ctx.fillStyle="#e9dfb8";ctx.fillRect(0,0,G.W*T,G.H*T);
+  for(let y=0;y<G.H;y++)for(let x=0;x<G.W;x++){
+    if(G.g[y][x]===1){ctx.fillStyle=(x+y)%2?"#2f6b3a":"#347640";ctx.fillRect(x*T,y*T,T,T);
+      ctx.fillStyle="rgba(255,255,255,.07)";ctx.fillRect(x*T,y*T,T,T*.3);}
+  }
+  for(const k in G.apples){const [x,y]=k.split(",").map(Number);emoji("🍎",x,y,.65);}
+  for(const k in G.doors){const [x,y]=k.split(",").map(Number);
+    ctx.fillStyle="#8b5a2b";ctx.fillRect(x*T+T*.08,y*T+T*.08,T*.84,T*.84);
+    ctx.strokeStyle="#5c3a17";ctx.lineWidth=Math.max(1,T*.08);ctx.strokeRect(x*T+T*.12,y*T+T*.12,T*.76,T*.76);
+    ctx.fillStyle="#ffd54a";ctx.font=`bold ${Math.floor(T*.6)}px sans-serif`;ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText("?",x*T+T/2,y*T+T/2+1);}
+  emoji("🏆",G.goal[0],G.goal[1],.8);
+  emoji(save.avatar,G.px,G.py,.85);
+}
+
+// ---------------- MOVEMENT ----------------
+function move(dx,dy){
+  if(!G||G.busy)return;
+  const nx=G.px+dx,ny=G.py+dy,k=nx+","+ny;
+  if(!G.g[ny]||G.g[ny][nx]!==0)return;
+  if(G.doors[k]){askDoor(k);return;}
+  G.px=nx;G.py=ny;
+  if(G.apples[k]){delete G.apples[k];G.eaten++;updScore();beep(880,.08);}
+  draw();
+  if(nx===G.goal[0]&&ny===G.goal[1])win();
+}
+document.addEventListener("keydown",e=>{
+  if(!document.getElementById("game").classList.contains("on")||G&&G.busy)return;
+  const m={ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0],w:[0,-1],s:[0,1],a:[-1,0],d:[1,0]}[e.key];
+  if(m){e.preventDefault();move(...m);}
+});
+let holdT=null;
+document.querySelectorAll("#pad button").forEach(b=>{
+  const [dx,dy]=b.dataset.d.split(",").map(Number);
+  b.addEventListener("pointerdown",e=>{e.preventDefault();move(dx,dy);clearInterval(holdT);holdT=setInterval(()=>move(dx,dy),170);});
+  ["pointerup","pointerleave","pointercancel"].forEach(ev=>b.addEventListener(ev,()=>clearInterval(holdT)));
+});
+let ts=null;
+cv.addEventListener("touchstart",e=>{const t=e.touches[0];ts=[t.clientX,t.clientY];},{passive:true});
+cv.addEventListener("touchend",e=>{if(!ts)return;const t=e.changedTouches[0];const dx=t.clientX-ts[0],dy=t.clientY-ts[1];ts=null;
+  if(Math.max(Math.abs(dx),Math.abs(dy))<20)return;
+  if(Math.abs(dx)>Math.abs(dy))move(Math.sign(dx),0);else move(0,Math.sign(dy));});
+document.getElementById("back").onclick=()=>{clearInterval(holdT);G=null;renderHome();show("home");};
+
+// ---------------- SOUND ----------------
+let AC=null;
+function beep(f,d){try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();const o=AC.createOscillator(),g=AC.createGain();
+  o.frequency.value=f;g.gain.value=.08;o.connect(g);g.connect(AC.destination);o.start();g.gain.exponentialRampToValueAtTime(.0001,AC.currentTime+d);o.stop(AC.currentTime+d);}catch(e){}}
+const happy=()=>{beep(660,.1);setTimeout(()=>beep(880,.12),100);setTimeout(()=>beep(1175,.18),200);};
+const sad=()=>{beep(300,.2);};
+
+// ---------------- QUESTIONS ----------------
+const qov=document.getElementById("qov"),qbox=document.getElementById("qbox");
+qov.addEventListener("keydown",e=>e.stopPropagation());
+const PRAISE=["Super! 🎉","Toll gemacht! 🌟","Richtig! 💪","Bravo! 👏","Genau! ✨","Spitze! 🚀"];
+
+function askDoor(k){
+  G.busy=true; clearInterval(holdT);
+  const q=GEN[pick(MODES[G.L.mode])]();
+  renderQ(q,k);
+  qov.classList.add("on");
+}
+function renderQ(q,k){
+  let h=`<span class="qtag">🚪 ${q.tag}</span><div class="prompt">${q.prompt}</div>${q.hint?`<p class="hint">${q.hint}</p>`:""}`;
+  if(q.kind==="mc"){
+    h+=`<div class="sent">${q.sent}</div><div class="opts">`+q.options.map(o=>`<button class="opt" data-v="${o.v}">${o.label}<small>${o.small}</small></button>`).join("")+`</div>`;
+  }else if(q.kind==="tapwords"){
+    h+=`<div class="sent">`+q.d.words.map(w=>`<button class="wbtn" data-i="${w.i}">${esc(w.t)}</button>`).join("")+`</div><button class="go" id="done">Fertig ✔</button>`;
+  }else if(q.kind==="tapchunk"){
+    h+=`<div class="sent">`+q.d.chunks.map(c=>`<button class="cbtn" data-r="${c.role}">${esc(c.text)}</button>`).join("")+`</div>`;
+  }else{
+    h+=`<div class="sent">${q.sent}</div><input class="ans" id="ans" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Hier schreiben …"><button class="go" id="done">Prüfen ✔</button>`;
+  }
+  h+=`<div class="fb" id="fb"></div>`;
+  qbox.innerHTML=h;
+  const fb=document.getElementById("fb"); let answered=false;
+  const finish=(ok,msg)=>{
+    if(answered)return; answered=true;
+    fb.classList.add("on");
+    if(ok){fb.className="fb on good";fb.innerHTML=`<b>${pick(PRAISE)}</b> Die Tür geht auf!`;happy();
+      setTimeout(()=>{qov.classList.remove("on");delete G.doors[k];G.opened++;updScore();G.busy=false;draw();},1100);}
+    else{G.mistakes++;sad();fb.className="fb on wrong";fb.innerHTML=`Nicht ganz. ${msg}<button class="go" id="next">Neue Frage ➜</button>`;
+      document.getElementById("next").onclick=()=>renderQ(GEN[pick(MODES[G.L.mode])](),k);}
+  };
+  if(q.kind==="mc"){
+    qbox.querySelectorAll(".opt").forEach(b=>b.onclick=()=>{if(answered)return;const ok=b.dataset.v===q.answer;
+      qbox.querySelectorAll(".opt").forEach(x=>{if(x.dataset.v===q.answer)x.classList.add("ok");});if(!ok)b.classList.add("bad");finish(ok,q.explain);});
+  }else if(q.kind==="tapwords"){
+    qbox.querySelectorAll(".wbtn").forEach(b=>b.onclick=()=>{if(!answered)b.classList.toggle("sel");});
+    document.getElementById("done").onclick=()=>{if(answered)return;
+      const sel=[...qbox.querySelectorAll(".wbtn.sel")].map(b=>+b.dataset.i).sort((a,b)=>a-b);
+      const ok=sel.length===q.answer.length&&sel.every((v,i)=>v===q.answer[i]);
+      qbox.querySelectorAll(".wbtn").forEach(b=>{const inA=q.answer.includes(+b.dataset.i);
+        if(inA)b.classList.add("ok");else if(b.classList.contains("sel"))b.classList.add("bad");});
+      finish(ok,q.explain);};
+  }else if(q.kind==="tapchunk"){
+    qbox.querySelectorAll(".cbtn").forEach(b=>b.onclick=()=>{if(answered)return;const ok=b.dataset.r===q.answer;
+      qbox.querySelectorAll(".cbtn").forEach(x=>{if(x.dataset.r===q.answer)x.classList.add("ok");});if(!ok)b.classList.add("bad");finish(ok,q.explain);});
+  }else{
+    const inp=document.getElementById("ans"); setTimeout(()=>inp.focus(),50);
+    const go=()=>{if(answered||!inp.value.trim())return;const r=q.check(inp.value);inp.disabled=true;finish(r[0],r[1]);};
+    document.getElementById("done").onclick=go;
+    inp.addEventListener("keydown",e=>{e.stopPropagation();if(e.key==="Enter")go();});
+  }
+}
+
+// ---------------- WIN ----------------
+function win(){
+  G.busy=true;
+  const stars=G.mistakes===0?3:G.mistakes<=2?2:1;
+  save.stars[G.li]=Math.max(save.stars[G.li]||0,stars);store();
+  const next=G.li+1<LEVELS.length;
+  document.getElementById("wbox").innerHTML=`<p class="big">🏆</p><h2>Geschafft!</h2>
+   <p style="font-size:2rem;margin:4px">${"⭐".repeat(stars)}${"☆".repeat(3-stars)}</p>
+   <p>Fehler: ${G.mistakes} · Äpfel: ${G.eaten} 🍎</p>
+   ${next?`<button class="go" id="wnext">Nächstes Labyrinth ➜</button>`:`<p><b>Du bist ein Grammatik-Meister! 👑</b></p>`}
+   <button class="go" id="wagain" style="background:#4f9a5c;box-shadow:0 3px 0 #2f6b3a">Nochmal spielen 🔁</button>
+   <button class="go" id="wmenu" style="background:#888;box-shadow:0 3px 0 #555">Zum Menü</button>`;
+  happy();setTimeout(happy,400);
+  const wov=document.getElementById("wov");wov.classList.add("on");
+  const close=()=>wov.classList.remove("on");
+  if(next)document.getElementById("wnext").onclick=()=>{close();startLevel(G.li+1);};
+  document.getElementById("wagain").onclick=()=>{close();startLevel(G.li);};
+  document.getElementById("wmenu").onclick=()=>{close();G=null;renderHome();show("home");};
+}
+
+renderHome();
+</script>
+</body>
+</html>
