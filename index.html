@@ -87,7 +87,15 @@ input.ans{width:100%;font-size:1.3rem;padding:12px;border-radius:12px;border:3px
     <b>Satzglieder</b><br>
     Subjekt: Wer oder was? · Prädikat: Was tut …? / Was geschieht?<br>
     Akkusativobjekt: Wen oder was? · Dativobjekt: Wem?<br>
-    Ortsangabe: Wo? Wohin? · Zeitangabe: Wann?
+    Ortsangabe: Wo? Wohin? · Zeitangabe: Wann?<br><br>
+    <b>Zeitformen</b><br>
+    Präsens: ich spiele · Präteritum: ich spielte<br>
+    Perfekt: ich habe gespielt / ich bin gegangen · Futur: ich werde spielen<br><br>
+    <b>Die vier Fälle</b><br>
+    1. Nominativ – Wer oder was? – der / die / das<br>
+    2. Genitiv – Wessen? – des / der / des<br>
+    3. Dativ – Wem? – dem / der / dem<br>
+    4. Akkusativ – Wen oder was? – den / die / das
   </div>
 </div>
 
@@ -231,20 +239,127 @@ const GEN = {
       sent:sentHTML(d,[]),check:v=>norm(v).toLowerCase()===c.text.toLowerCase()?[true]:[false,`Wer oder was ${esc(p.text)}? → <b>${esc(c.text)}</b>.`]};
   }
 };
+
+// ---------------- VERBEN & ZEITFORMEN ----------------
+const PERS=[["Ich"],["Du"],["Lena","Paul","Er","Sie","Mama","Der Opa"],["Wir"],["Ihr"],["Die Kinder","Meine Freunde"]];
+const AUX={haben:["habe","hast","hat","haben","habt","haben"],sein:["bin","bist","ist","sind","seid","sind"],werden:["werde","wirst","wird","werden","werdet","werden"]};
+const VERBS=[
+ ["spielen","Fußball","spiele spielst spielt spielen spielt spielen","spielte spieltest spielte spielten spieltet spielten","haben","gespielt"],
+ ["malen","ein Bild","male malst malt malen malt malen","malte maltest malte malten maltet malten","haben","gemalt"],
+ ["kaufen","ein Eis","kaufe kaufst kauft kaufen kauft kaufen","kaufte kauftest kaufte kauften kauftet kauften","haben","gekauft"],
+ ["lesen","ein Buch","lese liest liest lesen lest lesen","las last las lasen last lasen","haben","gelesen"],
+ ["essen","Palatschinken","esse isst isst essen esst essen","aß aßest aß aßen aßt aßen","haben","gegessen"],
+ ["schreiben","einen Brief","schreibe schreibst schreibt schreiben schreibt schreiben","schrieb schriebst schrieb schrieben schriebt schrieben","haben","geschrieben"],
+ ["singen","ein Lied","singe singst singt singen singt singen","sang sangst sang sangen sangt sangen","haben","gesungen"],
+ ["sehen","einen Film","sehe siehst sieht sehen seht sehen","sah sahst sah sahen saht sahen","haben","gesehen"],
+ ["gehen","in die Schule","gehe gehst geht gehen geht gehen","ging gingst ging gingen gingt gingen","sein","gegangen"],
+ ["fahren","mit dem Rad","fahre fährst fährt fahren fahrt fahren","fuhr fuhrst fuhr fuhren fuhrt fuhren","sein","gefahren"],
+ ["laufen","in den Park","laufe läufst läuft laufen lauft laufen","lief liefst lief liefen lieft liefen","sein","gelaufen"],
+ ["schwimmen","im See","schwimme schwimmst schwimmt schwimmen schwimmt schwimmen","schwamm schwammst schwamm schwammen schwammt schwammen","sein","geschwommen"]
+].map(v=>({inf:v[0],obj:v[1],pr:v[2].split(" "),pt:v[3].split(" "),aux:v[4],pp:v[5]}));
+const TENSES={pr:"Präsens",pt:"Präteritum",pf:"Perfekt",fu:"Futur"};
+const TENSE_HINT={pr:"Gegenwart – jetzt",pt:"1. Vergangenheit",pf:"2. Vergangenheit – mit haben/sein",fu:"Zukunft – mit werden"};
+function vPick(noDuIhr){const ps=noDuIhr?[0,2,3,5]:[0,1,2,3,4,5];const p=pick(ps);return {v:pick(VERBS),p,subj:pick(PERS[p])};}
+function vSent(o,t){const {v,p,subj}=o;
+  const a=t==="pr"?[v.pr[p],""]:t==="pt"?[v.pt[p],""]:t==="pf"?[AUX[v.aux][p],v.pp]:[AUX.werden[p],v.inf];
+  return subj+" "+a[0]+" "+v.obj+(a[1]?" "+a[1]:"")+".";}
+
+// ---------------- WORTSCHATZ ----------------
+const OPP=[["groß","klein"],["alt","jung"],["alt","neu"],["hell","dunkel"],["laut","leise"],["schnell","langsam"],["heiß","kalt"],["voll","leer"],["hart","weich"],["dick","dünn"],["lang","kurz"],["nass","trocken"],["schwer","leicht"],["früh","spät"],["fröhlich","traurig"],["mutig","ängstlich"],["sauber","schmutzig"],["teuer","billig"],["stark","schwach"],["warm","kalt"]];
+const oppOf=w=>OPP.flatMap(([a,b])=>a===w?[b]:b===w?[a]:[]);
+const OPPWORDS=[...new Set(OPP.flat())];
+const FAM={fahren:["Fahrrad","Fahrer","Abfahrt","Fahrkarte"],spielen:["Spielplatz","Spieler","Spielzeug","verspielt"],
+ schreiben:["Schreibtisch","Schrift","Schreiber","beschreiben"],backen:["Bäcker","Bäckerei","Backofen","Gebäck"],
+ fliegen:["Flugzeug","Flieger","Flughafen","Flug"],lesen:["Leser","Lesebuch","vorlesen","Lesezeichen"]};
+const AT=[["Tomate","Paradeiser"],["Januar","Jänner"],["Tüte","Sackerl"],["Kartoffel","Erdapfel"],["Sahne","Schlagobers"],["Aprikose","Marille"],["Treppe","Stiege"],["Brötchen","Semmel"],["Quark","Topfen"],["Schrank","Kasten"],["Meerrettich","Kren"],["Hackfleisch","Faschiertes"],["Mülleimer","Mistkübel"],["Junge","Bub"],["Pfannkuchen","Palatschinke"]];
+
+// ---------------- DIE VIER FÄLLE ----------------
+const NOUNS=[["Vater","m","Vaters"],["Lehrer","m","Lehrers"],["Bruder","m","Bruders"],["Onkel","m","Onkels"],["Hund","m","Hundes"],
+ ["Katze","f","Katze"],["Oma","f","Oma"],["Mutter","f","Mutter"],["Schwester","f","Schwester"],["Lehrerin","f","Lehrerin"],
+ ["Mädchen","n","Mädchens"],["Baby","n","Babys"],["Pferd","n","Pferdes"],["Kind","n","Kindes"]];
+const ART={nom:{m:"der",f:"die",n:"das"},gen:{m:"des",f:"der",n:"des"},dat:{m:"dem",f:"der",n:"dem"},akk:{m:"den",f:"die",n:"das"}};
+const CASES={nom:"Nominativ",gen:"Genitiv",dat:"Dativ",akk:"Akkusativ"};
+const CASE_NR={nom:"1. Fall",gen:"2. Fall",dat:"3. Fall",akk:"4. Fall"};
+const CASE_Q={nom:"Wer oder was?",gen:"Wessen?",dat:"Wem?",akk:"Wen oder was?"};
+const CT={nom:["_ schläft auf dem Sofa.","_ lacht laut.","_ wartet vor der Schule."],
+ gen:["Das ist das Fahrrad _.","Die Jacke _ ist blau.","Ich finde den Schuh _."],
+ dat:["Ich helfe _.","Paul schenkt _ ein Buch.","Wir winken _."],
+ akk:["Ich sehe _.","Lena ruft _.","Wir besuchen _."]};
+const cap=s=>s[0].toUpperCase()+s.slice(1);
+function cPick(){const c=pick(Object.keys(CASES)),n=pick(NOUNS),tpl=pick(CT[c]);
+  const word=c==="gen"?n[2]:n[0];let art=ART[c][n[1]];const start=tpl.startsWith("_");if(start)art=cap(art);
+  const [pre,post]=tpl.split("_");return {c,n,word,art,start,pre,post};}
+
+Object.assign(GEN,{
+  tenseMC(){const o=vPick(true),t=pick(Object.keys(TENSES));
+    return {tag:"Zeitformen",kind:"mc",prompt:"In welcher Zeitform steht der Satz?",hint:"",sent:esc(vSent(o,t)),
+      options:Object.keys(TENSES).map(k=>({v:k,label:TENSES[k],small:TENSE_HINT[k]})),answer:t,
+      explain:`Der Satz steht im <b>${TENSES[t]}</b> (${TENSE_HINT[t]}).`};},
+  tenseChange(){const o=vPick(true),keys=Object.keys(TENSES),t0=pick(keys),t1=pick(keys.filter(k=>k!==t0));
+    return {tag:"Zeitformen",kind:"mc",wide:true,prompt:`Wie heißt der Satz im ${TENSES[t1]}?`,hint:TENSES[t1]+": "+TENSE_HINT[t1],
+      sent:esc(vSent(o,t0)),options:shuffle(keys).map(k=>({v:k,label:esc(vSent(o,k)),small:""})),answer:t1,
+      explain:`Im ${TENSES[t1]}: <b>${esc(vSent(o,t1))}</b>`};},
+  conjType(){const t=pick(["pr","pr","pt"]),o=vPick(t==="pt"),{v,p,subj}=o,ans=v[t][p];
+    return {tag:"Verben",kind:"type",prompt:`Setze das Verb „${v.inf}“ im ${TENSES[t]} ein.`,hint:TENSE_HINT[t],
+      sent:esc(subj)+" ____ "+esc(v.obj)+".",check:x=>norm(x).toLowerCase()===ans?[true]:[false,`Richtig: ${esc(subj)} <b>${ans}</b> ${esc(v.obj)}.`]};},
+  auxMC(){const o=vPick(false),{v,p,subj}=o,ans=AUX[v.aux][p];
+    return {tag:"Perfekt",kind:"mc",prompt:"haben oder sein?",hint:"Das Perfekt bildet man mit haben oder sein.",
+      sent:esc(subj)+" ____ "+esc(v.obj)+" "+v.pp+".",options:shuffle([AUX.haben[p],AUX.sein[p]]).map(x=>({v:x,label:x,small:""})),answer:ans,
+      explain:`Richtig: ${esc(subj)} <b>${ans}</b> ${esc(v.obj)} ${v.pp}. Bei Bewegung von einem Ort zum anderen (gehen, fahren, laufen, schwimmen) nimmt man <b>sein</b>.`};},
+  oppMC(){const w=pick(OPPWORDS),acc=oppOf(w),a=pick(acc);
+    const d=shuffle(OPPWORDS.filter(x=>x!==w&&!acc.includes(x))).slice(0,3);
+    return {tag:"Wortschatz",kind:"mc",prompt:`Was ist das Gegenteil von „${w}“?`,hint:"",sent:`<b>${w}</b> ↔ ?`,
+      options:shuffle([a,...d]).map(x=>({v:x,label:x,small:""})),answer:a,explain:`Das Gegenteil von „${w}“ ist <b>${acc.join(" / ")}</b>.`};},
+  oppType(){const w=pick(OPPWORDS),acc=oppOf(w);
+    return {tag:"Wortschatz",kind:"type",prompt:`Schreibe das Gegenteil von „${w}“.`,hint:"Ein Wort genügt.",sent:`<b>${w}</b> ↔ ?`,
+      check:x=>acc.includes(norm(x).toLowerCase())?[true]:[false,`Das Gegenteil von „${w}“ ist <b>${acc.join(" / ")}</b>.`]};},
+  famMC(){const ks=Object.keys(FAM),f=pick(ks),mem=shuffle(FAM[f]).slice(0,3),intr=pick(FAM[pick(ks.filter(k=>k!==f))]);
+    return {tag:"Wortfamilien",kind:"mc",prompt:`Welches Wort gehört NICHT zur Wortfamilie „${f}“?`,hint:"Wörter einer Familie haben den gleichen Wortstamm.",
+      sent:`👨‍👩‍👧 <b>${f}</b>`,options:shuffle([intr,...mem]).map(x=>({v:x,label:x,small:""})),answer:intr,
+      explain:`„${intr}“ gehört nicht dazu. Zur Familie „${f}“ gehören: ${FAM[f].join(", ")}.`};},
+  atMC(){const e=pick(AT),dir=rnd(2),q=e[dir],a=e[1-dir];
+    const d=shuffle(AT.filter(x=>x!==e)).slice(0,3).map(x=>x[1-dir]);
+    return {tag:"Österreichisch",kind:"mc",prompt:dir===0?`Wie sagt man in Österreich zu „${q}“?`:`Was bedeutet „${q}“?`,hint:"",
+      sent:dir===0?`🇩🇪 ${q} → 🇦🇹 ?`:`🇦🇹 ${q} → 🇩🇪 ?`,options:shuffle([a,...d]).map(x=>({v:x,label:x,small:""})),answer:a,
+      explain:`🇩🇪 ${e[0]} = 🇦🇹 <b>${e[1]}</b>`};},
+  caseArtMC(){const o=cPick(),all=["der","die","das","dem","den","des"].map(x=>o.start?cap(x):x);
+    const d=shuffle(all.filter(x=>x!==o.art)).slice(0,3);
+    return {tag:"Die vier Fälle",kind:"mc",prompt:"Welcher Artikel passt?",hint:`Tipp: ${ART.nom[o.n[1]]} ${o.n[0]}. Stelle die Frage!`,
+      sent:esc(o.pre)+"____ "+esc(o.word)+esc(o.post),options:shuffle([o.art,...d]).map(x=>({v:x,label:x,small:""})),answer:o.art,
+      explain:`Frage: ${CASE_Q[o.c]} → <b>${CASES[o.c]}</b> (${CASE_NR[o.c]}): <b>${o.art} ${esc(o.word)}</b>`};},
+  caseIdMC(){const o=cPick();
+    return {tag:"Die vier Fälle",kind:"mc",prompt:"In welchem Fall steht das markierte Wort?",hint:"Stelle die passende Frage!",
+      sent:esc(o.pre)+`<span class="hl">${o.art} ${esc(o.word)}</span>`+esc(o.post),
+      options:Object.keys(CASES).map(k=>({v:k,label:CASES[k],small:CASE_NR[k]+" · "+CASE_Q[k]})),answer:o.c,
+      explain:`Frage: ${CASE_Q[o.c]} → <b>${CASES[o.c]}</b> (${CASE_NR[o.c]})`};},
+  caseType(){const o=cPick();
+    return {tag:"Die vier Fälle",kind:"type",prompt:"Schreibe den richtigen Artikel.",hint:`Tipp: ${ART.nom[o.n[1]]} ${o.n[0]}`,
+      sent:esc(o.pre)+"____ "+esc(o.word)+esc(o.post),
+      check:x=>norm(x).toLowerCase()===o.art.toLowerCase()?[true]:[false,`Frage: ${CASE_Q[o.c]} → ${CASES[o.c]}: <b>${o.art} ${esc(o.word)}</b>`]};}
+});
 const MODES = {
   pos:["posMC","posMC","posTap","posTap","typeNoun"],
   part:["partTap","partTap","partMC","partMC","typePred","typeSubj"],
-  mix:["posMC","posTap","typeNoun","partTap","partMC","typePred","typeSubj"]
+  verb:["tenseMC","tenseMC","tenseChange","conjType","conjType","auxMC"],
+  vocab:["oppMC","oppType","famMC","atMC","atMC"],
+  cases:["caseArtMC","caseArtMC","caseIdMC","caseIdMC","caseType"],
+  all:Object.keys(GEN)
 };
 
 // ---------------- LEVELS & SAVE ----------------
 const LEVELS = [
- {name:"Wortarten-Wald",ic:"🌲",mode:"pos",cw:5,ch:6,doors:4},
- {name:"Wortarten-Höhle",ic:"🦇",mode:"pos",cw:6,ch:8,doors:6},
- {name:"Satzglied-Schloss",ic:"🏰",mode:"part",cw:5,ch:6,doors:4},
- {name:"Satzglied-Turm",ic:"🗼",mode:"part",cw:6,ch:8,doors:6},
- {name:"Misch-Labyrinth",ic:"🌀",mode:"mix",cw:7,ch:9,doors:7},
- {name:"Meister-Labyrinth",ic:"👑",mode:"mix",cw:8,ch:10,doors:9}
+ {id:"wa1",grp:"🔤 Wortarten",name:"Wortarten-Wald",ic:"🌲",mode:"pos",cw:5,ch:6,doors:4},
+ {id:"wa2",grp:"🔤 Wortarten",name:"Wortarten-Höhle",ic:"🦇",mode:"pos",cw:6,ch:8,doors:6},
+ {id:"sg1",grp:"🧩 Satzglieder",name:"Satzglied-Schloss",ic:"🏰",mode:"part",cw:5,ch:6,doors:4},
+ {id:"sg2",grp:"🧩 Satzglieder",name:"Satzglied-Turm",ic:"🗼",mode:"part",cw:6,ch:8,doors:6},
+ {id:"vb1",grp:"⏰ Verben & Zeitformen",name:"Verben-Vulkan",ic:"🌋",mode:"verb",cw:5,ch:6,doors:4},
+ {id:"vb2",grp:"⏰ Verben & Zeitformen",name:"Zeit-Tunnel",ic:"⏳",mode:"verb",cw:6,ch:8,doors:6},
+ {id:"ws1",grp:"📚 Wortschatz",name:"Wörter-Wiese",ic:"🌼",mode:"vocab",cw:5,ch:6,doors:4},
+ {id:"ws2",grp:"📚 Wortschatz",name:"Wörter-Insel",ic:"🏝️",mode:"vocab",cw:6,ch:8,doors:6},
+ {id:"fa1",grp:"🛡️ Die vier Fälle",name:"Fälle-Festung",ic:"🛡️",mode:"cases",cw:5,ch:6,doors:4},
+ {id:"fa2",grp:"🛡️ Die vier Fälle",name:"Drachen-Burg",ic:"🐉",mode:"cases",cw:6,ch:8,doors:6},
+ {id:"mx1",grp:"🌀 Alles gemischt",name:"Misch-Labyrinth",ic:"🌀",mode:"all",cw:7,ch:9,doors:7},
+ {id:"mx2",grp:"🌀 Alles gemischt",name:"Meister-Labyrinth",ic:"👑",mode:"all",cw:8,ch:10,doors:9}
 ];
 const AVATARS=["🦊","🐱","🐶","🦖","🐼","🚀","⚽","🐸"];
 const KEY="wortlab_v1";
@@ -252,16 +367,20 @@ let save; try{save=JSON.parse(localStorage.getItem(KEY))||{};}catch(e){save={};}
 save.avatar=save.avatar||"🦊"; save.stars=save.stars||{};
 const store=()=>{try{localStorage.setItem(KEY,JSON.stringify(save));}catch(e){}};
 
+// migrate old index-based stars
+["wa1","wa2","sg1","sg2","mx1","mx2"].forEach((id,i)=>{if(save.stars[i]!=null){save.stars[id]=Math.max(save.stars[id]||0,save.stars[i]);delete save.stars[i];}});
 function renderHome(){
   const av=document.getElementById("avatars"); av.innerHTML="";
   AVATARS.forEach(a=>{const b=document.createElement("button");b.textContent=a;if(a===save.avatar)b.className="sel";
     b.onclick=()=>{save.avatar=a;store();renderHome();};av.appendChild(b);});
   const lv=document.getElementById("levels"); lv.innerHTML="";
   LEVELS.forEach((L,i)=>{
-    const unlocked=i===0||save.stars[i-1]>0;
-    const s=save.stars[i]||0;
+    const prev=LEVELS[i-1];
+    if(!prev||prev.grp!==L.grp){const hh=document.createElement("h3");hh.textContent=L.grp;hh.style.margin="14px 0 4px";lv.appendChild(hh);}
+    const unlocked=!prev||prev.grp!==L.grp||save.stars[prev.id]>0;
+    const s=save.stars[L.id]||0;
     const b=document.createElement("button"); b.className="lvl"+(unlocked?"":" locked");
-    b.innerHTML=`<span class="ic">${unlocked?L.ic:"🔒"}</span><span class="nm">${i+1}. ${L.name}</span><span class="st">${"⭐".repeat(s)}${"☆".repeat(3-s)}</span>`;
+    b.innerHTML=`<span class="ic">${unlocked?L.ic:"🔒"}</span><span class="nm">${L.name}</span><span class="st">${"⭐".repeat(s)}${"☆".repeat(3-s)}</span>`;
     if(unlocked) b.onclick=()=>startLevel(i);
     lv.appendChild(b);
   });
@@ -382,7 +501,7 @@ function askDoor(k){
 function renderQ(q,k){
   let h=`<span class="qtag">🚪 ${q.tag}</span><div class="prompt">${q.prompt}</div>${q.hint?`<p class="hint">${q.hint}</p>`:""}`;
   if(q.kind==="mc"){
-    h+=`<div class="sent">${q.sent}</div><div class="opts">`+q.options.map(o=>`<button class="opt" data-v="${o.v}">${o.label}<small>${o.small}</small></button>`).join("")+`</div>`;
+    h+=`<div class="sent">${q.sent}</div><div class="opts"${q.wide?' style="grid-template-columns:1fr"':""}>`+q.options.map(o=>`<button class="opt" data-v="${o.v}">${o.label}<small>${o.small||""}</small></button>`).join("")+`</div>`;
   }else if(q.kind==="tapwords"){
     h+=`<div class="sent">`+q.d.words.map(w=>`<button class="wbtn" data-i="${w.i}">${esc(w.t)}</button>`).join("")+`</div><button class="go" id="done">Fertig ✔</button>`;
   }else if(q.kind==="tapchunk"){
@@ -427,7 +546,7 @@ function renderQ(q,k){
 function win(){
   G.busy=true;
   const stars=G.mistakes===0?3:G.mistakes<=2?2:1;
-  save.stars[G.li]=Math.max(save.stars[G.li]||0,stars);store();
+  save.stars[G.L.id]=Math.max(save.stars[G.L.id]||0,stars);store();
   const next=G.li+1<LEVELS.length;
   document.getElementById("wbox").innerHTML=`<p class="big">🏆</p><h2>Geschafft!</h2>
    <p style="font-size:2rem;margin:4px">${"⭐".repeat(stars)}${"☆".repeat(3-stars)}</p>
